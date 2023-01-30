@@ -1,4 +1,4 @@
-package com.pgama.projectmsg;
+package com.pgama.projectmsgnew;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
