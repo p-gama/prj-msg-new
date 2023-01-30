@@ -6,6 +6,8 @@ import com.pgama.projectmsgnew.domain.entity.*;
 import com.pgama.projectmsgnew.controller.dto.MensagemDTO;
 import com.pgama.projectmsgnew.exception.MensagemNaoEncontradaException;
 import io.swagger.annotations.Api;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/mensagens")
 @Validated
@@ -24,7 +27,9 @@ public class MensagemController {
      private final CadastrarMensagemUseCase cadastrarMensagemUseCase;
     private final DeletarMensagemUseCase deletarMensagemUseCase;
     private final ListarMensagensUseCase listarMensagensUseCase;
-    private final MensagemMapper mapper;
+
+    @Autowired
+    private MensagemMapper mapper;
 
     public MensagemController(DeletarMensagemUseCase deletarMensagemUseCase, ListarMensagensUseCase listarMensagensUseCase, AtualizarMensagemUseCase atualizarMensagemUseCase, BuscarMensagemPorIdUseCase buscarMensagemPorIdUseCase, CadastrarMensagemUseCase cadastrarMensagemUseCase, MensagemMapper mapper) {
         this.atualizarMensagemUseCase = atualizarMensagemUseCase;
@@ -37,25 +42,20 @@ public class MensagemController {
     }
 
 
-    @GetMapping(path ="/{id}")
-    public ResponseEntity<MensagemEntity> findById(@PathVariable Long id) {
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<MensagemDTO> findById(@PathVariable Long id) {
         try {
-            MensagemEntity mensagem = buscarMensagemPorIdUseCase.buscarMensagemPorId(id);
-            if (mensagem == null) {
-                throw new MensagemNaoEncontradaException("A mensagem não foi encontrada.");
-            }
-            MensagemDTO response = mapper.toDto(mensagem);
-            return new ResponseEntity<>(mensagem, HttpStatus.OK);
+            MensagemDTO mensagemDTO = buscarMensagemPorIdUseCase.buscarMensagemPorId(id);
+            return new ResponseEntity<>(mensagemDTO, HttpStatus.OK);
         } catch (MensagemNaoEncontradaException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
-
     @GetMapping
     public ResponseEntity<Page<MensagemDTO>> listarMensagens(Pageable pageable) {
         Page<MensagemEntity> mensagens = listarMensagensUseCase.listarMensagens(pageable);
-        Page<MensagemDTO> mensagensDto = mensagens.map(MensagemMapper::toDto);
+        Page<MensagemDTO> mensagensDto = mensagens.map(mapper::toDto);
         return ResponseEntity.ok(mensagensDto);
     }
 
@@ -65,15 +65,13 @@ public class MensagemController {
         return new ResponseEntity<>(mensagemCriada, HttpStatus.CREATED);
     }
 
-
     @PutMapping(path ="/{id}")
     public ResponseEntity<MensagemEntity> atualizarMensagem(@PathVariable Long id, @RequestBody MensagemDTO request) {
         try {
             MensagemEntity mensagem = mapper.toEntity(request);
             mensagem.setId(id);
             MensagemEntity mensagemAtualizada = atualizarMensagemUseCase.atualizarMensagem(id, mensagem);
-            MensagemEntity response = MensagemMapper. toEntity(mensagemAtualizada);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return new ResponseEntity<>(mensagemAtualizada, HttpStatus.OK);
         } catch (MensagemNaoEncontradaException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
